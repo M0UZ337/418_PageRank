@@ -17,6 +17,9 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
+private static enum PageCounter {
+    PAGE_NUM
+}
 
 public class PDPreProcess {
 
@@ -28,24 +31,17 @@ public class PDPreProcess {
             String nodes[] = value.toString().split(" ");
             IntWritable from = new IntWritable(Integer.parseInt(nodes[0]));
             IntWritable dest = new IntWritable(Integer.parseInt(nodes[1]));
-            IntWritable weight = new IntWritable(Integer.parseInt(nodes[2]));
 
             if(from == dest){
-                if(map.containsKey(from)){
-                    // do nothing
-                }
-                else{
-                    map.put(from, new MapWritable());
-                }
             }
             else{
                 if(map.containsKey(from)){
                     MapWritable list = map.get(from);
-                    list.put(dest, weight);
+                    list.put(dest, 0);
                 }
                 else{
                     MapWritable list = new MapWritable();
-                    list.put(dest,weight);
+                    list.put(dest, 0);
                     map.put(from, list);
                 }
             }
@@ -62,6 +58,7 @@ public class PDPreProcess {
             for(Map.Entry<IntWritable, MapWritable> node : map.entrySet()){
                 context.write(node.getKey(), node.getValue());
             }
+            context.getCounter(PageCounter.PAGE_NUM).increment(map.size());
         }
     }
 
