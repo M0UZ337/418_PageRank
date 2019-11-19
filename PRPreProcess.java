@@ -19,7 +19,9 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 
-public class PDPreProcess {
+public class PRPreProcess {
+
+    public static enum NodeCounter { COUNT };
 
     public static class InputParser extends Mapper<Object, Text, IntWritable, MapWritable> {
         
@@ -79,6 +81,7 @@ public class PDPreProcess {
             DoubleWritable prValue = new DoubleWritable();
             IntWritable childNum = new IntWritable(adjList.size());
             PRNodeWritable node = new PRNodeWritable(key, prValue, childNum, adjList);
+            context.getCounter(NodeCounter.COUNT).increment(1);
             context.write(key, node);
         }
     }
