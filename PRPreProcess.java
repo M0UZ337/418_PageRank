@@ -18,10 +18,7 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
-<<<<<<< HEAD:PDPreProcess.java
-private static enum PageCounter { PAGE_NUM }
-=======
->>>>>>> 2e211f6bbe1be62db791c563fcbb19fd28d24d5f:PRPreProcess.java
+private static enum PageCounter { PAGE_NUM };
 
 public class PRPreProcess {
 
