@@ -20,18 +20,19 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 public class PRAdjust {
 
-    public static class InputParser extends Mapper<IntWritable, PDNodeWritable, IntWritable, PDNodeWritable> {
+    public static class PRAdjustMapper extends Mapper<IntWritable, PDNodeWritable, IntWritable, PDNodeWritable> {
         public void map(IntWritable key, PDNodeWritable node, Context context) throws IOException, InterruptedException {
             context.write(key, node);
         }
 
     }
 
-    public static class NodeReducer extends Reducer<IntWritable, PDNodeWritable, IntWritable, PDNodeWritable> { 
+    public static class PRAdjustReducer extends Reducer<IntWritable, PDNodeWritable, IntWritable, PDNodeWritable> { 
         public void reduce(IntWritable key, PDNodeWritable node, Context context) throws IOException, InterruptedException {
+            Configuration conf = context.getConfiguration();
             double alpha = Long.parseLong(conf.get("alpha")); // Not yet set
+            long nodeCount = Long.parseLong(conf.get("nodeCount"));
             double m = context.getCounter( m ).getValue();
-            int nodeNum = context.getCounter( nodeNum ).getValue();
             double p = node.getPRValue().get();
             double p2 = (alpha/nodeNum) + (1-alpha) * ((m/nodeNum)+p);
             node.setPRValue(new DoubleWritable(p2));

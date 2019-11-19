@@ -95,6 +95,24 @@ public class PageRank {
 
         prePRJob.waitForCompletion(true);
 
+        // Configuration PRAdjustConf = new Condiguation();
+        // //PRAdjustConf.set("nodeCount", Long.toString(arg[0]));     alpha have not been introduce in make
+        // PRAdjustConf.set("nodeCount", Long.toString(nodeCount));
+        // Job PRAdjustJob = Job.getInstance(PRAdjustConf, "PRAdjust");
+        // PRAdjustJob.setJarByClass(PRAdjust.class);
+        // PRAdjustJob.setMapperClass(PRAdjustMapper.class);
+        // PRAdjustJob.setMapOutputKeyClass(IntWritable.class);
+        // PRAdjustJob.setMapOutputValueClass(PRNodeWritable.class);
+        // PRAdjustJob.setInputFormatClass(SequenceFileInputFormat.class);
+        // PRAdjustJob.setReducerClass(PRAdjustReducer.class);
+        // PRAdjustJob.setOutputKeyClass(IntWritable.class);
+        // PRAdjustJob.setOutputValueClass(PRNodeWritable.class);
+        // PRAdjustJob.setOutputFormatClass(SequenceFileOutputFormat.class);
+        // FileInputFormat.addInputPath(PRAdjustJob, new Path("/user/hadoop/tmp/Iteration"+ Integer.toString(i)));
+        // FileOutputFormat.setOutputPath(PRAdjustJob, new Path("/user/hadoop/tmp/Iteration"+ Integer.toString(i)+"_Adjust"));
+
+        // PRAdjustJob.waitForCompletion(true);
+
         int i = 0;
 
         Configuration printResultConf = new Configuration();
