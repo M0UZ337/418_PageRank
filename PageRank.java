@@ -128,24 +128,6 @@ public class PageRank {
 
         prePRJob.waitForCompletion(true);
 
-        // Configuration PRAdjustConf = new Condiguation();
-        // //PRAdjustConf.set("nodeCount", Long.toString(arg[0]));     alpha have not been introduce in make
-        // PRAdjustConf.set("nodeCount", Long.toString(nodeCount));
-        // Job PRAdjustJob = Job.getInstance(PRAdjustConf, "PRAdjust");
-        // PRAdjustJob.setJarByClass(PRAdjust.class);
-        // PRAdjustJob.setMapperClass(PRAdjustMapper.class);
-        // PRAdjustJob.setMapOutputKeyClass(IntWritable.class);
-        // PRAdjustJob.setMapOutputValueClass(PRNodeWritable.class);
-        // PRAdjustJob.setInputFormatClass(SequenceFileInputFormat.class);
-        // PRAdjustJob.setReducerClass(PRAdjustReducer.class);
-        // PRAdjustJob.setOutputKeyClass(IntWritable.class);
-        // PRAdjustJob.setOutputValueClass(PRNodeWritable.class);
-        // PRAdjustJob.setOutputFormatClass(SequenceFileOutputFormat.class);
-        // FileInputFormat.addInputPath(PRAdjustJob, new Path("/user/hadoop/tmp/Iteration"+ Integer.toString(i)));
-        // FileOutputFormat.setOutputPath(PRAdjustJob, new Path("/user/hadoop/tmp/Iteration"+ Integer.toString(i)+"_Adjust"));
-
-        // PRAdjustJob.waitForCompletion(true);
-
         int i = 0;
 
         Configuration PRConf = new Configuration();
@@ -164,6 +146,24 @@ public class PageRank {
 
         PRJob.waitForCompletion(true);
 
+        Configuration PRAdjustConf = new Condiguation();
+        PRAdjustConf.set("alpha", Long.toString(arg[0]));
+        PRAdjustConf.set("nodeCount", Long.toString(nodeCount));
+        Job PRAdjustJob = Job.getInstance(PRAdjustConf, "PRAdjust");
+        PRAdjustJob.setJarByClass(PRAdjust.class);
+        PRAdjustJob.setMapperClass(PRAdjustMapper.class);
+        PRAdjustJob.setMapOutputKeyClass(IntWritable.class);
+        PRAdjustJob.setMapOutputValueClass(PRNodeWritable.class);
+        PRAdjustJob.setInputFormatClass(SequenceFileInputFormat.class);
+        PRAdjustJob.setReducerClass(PRAdjustReducer.class);
+        PRAdjustJob.setOutputKeyClass(IntWritable.class);
+        PRAdjustJob.setOutputValueClass(PRNodeWritable.class);
+        PRAdjustJob.setOutputFormatClass(SequenceFileOutputFormat.class);
+        FileInputFormat.addInputPath(PRAdjustJob, new Path("/user/hadoop/tmp/Iteration0_1"));
+        FileOutputFormat.setOutputPath(PRAdjustJob, new Path("/user/hadoop/tmp/Iteration1"));
+
+        PRAdjustJob.waitForCompletion(true);
+
         Configuration printResultConf = new Configuration();
         printResultConf.set("mapreduce.output.textoutputformat.separator", " ");
         Job printResultJob = Job.getInstance(printResultConf, "print final result");
@@ -175,7 +175,7 @@ public class PageRank {
         printResultJob.setReducerClass(FinalReducer.class);
         printResultJob.setOutputKeyClass(IntWritable.class);
         printResultJob.setOutputValueClass(Text.class);
-        FileInputFormat.addInputPath(printResultJob, new Path("/user/hadoop/tmp/Iteration0_1"));
+        FileInputFormat.addInputPath(printResultJob, new Path("/user/hadoop/tmp/Iteration1"));
         FileOutputFormat.setOutputPath(printResultJob, new Path(args[3]));
                 
         System.exit(printResultJob.waitForCompletion(true) ? 0 : 1);
