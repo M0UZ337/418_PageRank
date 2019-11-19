@@ -8,6 +8,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.io.BooleanWritable;
@@ -17,7 +18,10 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
+<<<<<<< HEAD:PDPreProcess.java
 private static enum PageCounter { PAGE_NUM }
+=======
+>>>>>>> 2e211f6bbe1be62db791c563fcbb19fd28d24d5f:PRPreProcess.java
 
 public class PDPreProcess {
 
@@ -26,20 +30,28 @@ public class PDPreProcess {
         HashMap<IntWritable, MapWritable> map = new HashMap<IntWritable, MapWritable>();
 
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+            Configuration conf = context.getConfiguration();            
             String nodes[] = value.toString().split(" ");
             IntWritable from = new IntWritable(Integer.parseInt(nodes[0]));
             IntWritable dest = new IntWritable(Integer.parseInt(nodes[1]));
+            IntWritable weight = new IntWritable(1);
 
-            if(from == dest){
+            if(from.get() == dest.get()){
+                if(map.containsKey(from)){
+                    // do nothing
+                }
+                else{
+                    map.put(from, new MapWritable());
+                }
             }
             else{
                 if(map.containsKey(from)){
                     MapWritable list = map.get(from);
-                    list.put(dest, 0);
+                    list.put(dest, weight);
                 }
                 else{
                     MapWritable list = new MapWritable();
-                    list.put(dest, 0);
+                    list.put(dest,weight);
                     map.put(from, list);
                 }
             }
@@ -56,11 +68,10 @@ public class PDPreProcess {
             for(Map.Entry<IntWritable, MapWritable> node : map.entrySet()){
                 context.write(node.getKey(), node.getValue());
             }
-            context.getCounter(PageCounter.PAGE_NUM).increment(map.size());
         }
     }
 
-    public static class NodeReducer extends Reducer<IntWritable, MapWritable, IntWritable, PDNodeWritable> {
+    public static class NodeReducer extends Reducer<IntWritable, MapWritable, IntWritable, PRNodeWritable> {
                 
         public void reduce(IntWritable key, Iterable<MapWritable> values, Context context) throws IOException, InterruptedException {
             MapWritable adjList = new MapWritable();
@@ -69,35 +80,11 @@ public class PDPreProcess {
                     adjList.put(tuple.getKey(),tuple.getValue());
                 }
             }
-            Configuration conf = context.getConfiguration();
-            int srcNodeID = Integer.parseInt(conf.get("srcNodeID"));
-            IntWritable nodeID = key;
-            BooleanWritable visited = new BooleanWritable(false);
-            IntWritable distance = new IntWritable(-1);
-            PDNodeWritable node;
-            if(srcNodeID == key.get()){
-                distance.set(0);
-            }
-            node = new PDNodeWritable(nodeID, visited, distance, adjList);
+            DoubleWritable prValue = new DoubleWritable();
+            IntWritable childNum = new IntWritable(adjList.size());
+            PRNodeWritable node = new PRNodeWritable(key, prValue, childNum, adjList);
             context.write(key, node);
         }
     }
 
-    public static void main(String[] args) throws Exception {
-        Configuration conf = new Configuration();
-        conf.set("srcNodeID", args[2]);
-        conf.set("mapreduce.output.textoutputformat.separator", " ");
-        Job job = Job.getInstance(conf, "pre process");
-        job.setJarByClass(PDPreProcess.class);
-        job.setMapperClass(InputParser.class);
-        job.setMapOutputKeyClass(IntWritable.class);
-        job.setMapOutputValueClass(MapWritable.class);
-        //job.setCombinerClass(NodeReducer.class);
-        job.setReducerClass(NodeReducer.class);
-        job.setOutputKeyClass(IntWritable.class);
-        job.setOutputValueClass(PDNodeWritable.class);
-        FileInputFormat.addInputPath(job, new Path(args[0]));
-        FileOutputFormat.setOutputPath(job, new Path(args[1]));
-        System.exit(job.waitForCompletion(true) ? 0 : 1);
-    }
 }
