@@ -153,8 +153,8 @@ public class PageRank {
             PRJob.setOutputKeyClass(IntWritable.class);
             PRJob.setOutputValueClass(PRNodeWritable.class);
             PRJob.setOutputFormatClass(SequenceFileOutputFormat.class);
-            FileInputFormat.addInputPath(PRJob, new Path("/user/hadoop/tmp/Iteration0"));
-            FileOutputFormat.setOutputPath(PRJob, new Path("/user/hadoop/tmp/Iteration0_1"));
+            FileInputFormat.addInputPath(PRJob, new Path("/user/hadoop/tmp/Iteration" + Integer.toString(i)));
+            FileOutputFormat.setOutputPath(PRJob, new Path("/user/hadoop/tmp/Iteration" + Integer.toString(i) + "_1"));
 
             PRJob.waitForCompletion(true);
 
@@ -174,8 +174,8 @@ public class PageRank {
             PRAdjustJob.setOutputKeyClass(IntWritable.class);
             PRAdjustJob.setOutputValueClass(PRNodeWritable.class);
             PRAdjustJob.setOutputFormatClass(SequenceFileOutputFormat.class);
-            FileInputFormat.addInputPath(PRAdjustJob, new Path("/user/hadoop/tmp/Iteration0_1"));
-            FileOutputFormat.setOutputPath(PRAdjustJob, new Path("/user/hadoop/tmp/Iteration1"));
+            FileInputFormat.addInputPath(PRAdjustJob, new Path("/user/hadoop/tmp/Iteration" + Integer.toString(i) + "_1"));
+            FileOutputFormat.setOutputPath(PRAdjustJob, new Path("/user/hadoop/tmp/Iteration" + Integer.toString(i + 1)));
 
             PRAdjustJob.waitForCompletion(true);
 
@@ -199,7 +199,7 @@ public class PageRank {
         printResultJob.setReducerClass(FinalReducer.class);
         printResultJob.setOutputKeyClass(IntWritable.class);
         printResultJob.setOutputValueClass(Text.class);
-        FileInputFormat.addInputPath(printResultJob, new Path("/user/hadoop/tmp/Iteration1"));
+        FileInputFormat.addInputPath(printResultJob, new Path("/user/hadoop/tmp/Iteration" + Integer.toString(i)));
         FileOutputFormat.setOutputPath(printResultJob, new Path(args[3]));
                 
         System.exit(printResultJob.waitForCompletion(true) ? 0 : 1);
