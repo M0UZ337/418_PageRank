@@ -18,19 +18,10 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
-public class PRAdjust {
-
-    public static class InputParser extends Mapper<Object, Text, IntWritable, MapWritable> {
-        public void map(IntWritable key, Iterable<PDNodeWritable> values, Context context) throws IOException, InterruptedException {
-            IntWritable nodeID = key;
+public class PageRank {
+    public static class ItrMapper extends Mapper<IntWritable, PDNodeWritable, IntWritable, PDNodeWritable> {
+        public void map(IntWritable key, PDNodeWritable node, Context context) throws IOException, InterruptedException {
             
         }
     }
-
-    public static class NodeReducer extends Reducer<IntWritable, MapWritable, IntWritable, PRNodeWritable> { 
-        public void reduce(IntWritable key, Iterable<MapWritable> values, Context context) throws IOException, InterruptedException {
-            
-        }
-    }
-
 }
