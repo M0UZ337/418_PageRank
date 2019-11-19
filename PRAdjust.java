@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.StringTokenizer;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.IntWritable;
@@ -28,11 +29,17 @@ public class PRAdjust {
     }
 
     public static class PRAdjustReducer extends Reducer<IntWritable, PDNodeWritable, IntWritable, PDNodeWritable> { 
-        public void reduce(IntWritable key, PDNodeWritable node, Context context) throws IOException, InterruptedException {
+        double alpha;
+        double m;
+        long nodeCount;
+        public void setup(Context context) throws IOException, InterruptedException {
             Configuration conf = context.getConfiguration();
-            double alpha = Double.parseDouble(conf.get("alpha"));
-            long nodeCount = Long.parseLong(conf.get("nodeCount"));
-            double m = context.getCounter( m ).getValue();
+            alpha = Double.parseDouble(conf.get("alpha"));
+            m = (double) Long.parseLong(conf.get("m"));
+            nodeCount = Long.parseLong(conf.get("nodeCount"));
+        }
+        public void reduce(IntWritable key, PDNodeWritable node, Context context) throws IOException, InterruptedException {
+            m = context.getCounter( m ).getValue();
             double p = node.getPRValue().get();
             double p2 = (alpha / nodeNum) + (1.0 - alpha) * ((m / nodeNum) + p);
             node.setPRValue(new DoubleWritable(p2));
