@@ -57,6 +57,7 @@ public class PRNodeWritable implements Writable {
         String output = "";
         output = output + "nodeID: " + this.nodeID.toString();
         output = output + " prValue: " + this.prValue.toString();
+        output = output + " childNum: " + this.childNum.toString();
         output = output + " adjList: ";
         for(Map.Entry<Writable, Writable> node : this.adjList.entrySet()){
             output = output + "(" + node.getKey().toString() + "," + node.getValue().toString() + ") ";

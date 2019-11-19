@@ -1,8 +1,8 @@
-all: PDPreProcess.class
-	jar cf pre.jar PDPreProcess*.class PDNodeWritable*.class
+all: PageRank.class
+	jar cf pr.jar PRPreProcess*.class PRNodeWritable*.class PageRank*.class
 
 compile:
-	hadoop com.sun.tools.javac.Main PDPreProcess.java PDNodeWritable.java
+	hadoop com.sun.tools.javac.Main PRPreProcess.java PRNodeWritable.java PageRank.java
 
 clean:
 	rm -f *.jar *.class
@@ -12,7 +12,14 @@ update_input:
 
 run:
 	rm -rf ./output ; \
+	hadoop fs -rm -r -f /user/hadoop/tmp && \
+	hadoop fs -mkdir /user/hadoop/tmp && \
 	hadoop fs -rm -r -f /user/hadoop/output && \
-	hadoop jar pre.jar PDPreProcess /user/hadoop/customeTestcase /user/hadoop/output 1 && \
+	hadoop jar pr.jar PageRank /user/hadoop/customeTestcase /user/hadoop/output && \
 	hadoop fs -get /user/hadoop/output ./ && \
 	cat ./output/part*
+
+final:
+	make compile && \
+	make all && \
+	make run

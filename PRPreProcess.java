@@ -18,11 +18,8 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
-private static enum PageCounter { PAGE_NUM };
 
 public class PRPreProcess {
-
-    public static enum NodeCounter { COUNT };
 
     public static class InputParser extends Mapper<Object, Text, IntWritable, MapWritable> {
         
@@ -64,7 +61,6 @@ public class PRPreProcess {
         }
 
         public void cleanup(Context context) throws IOException, InterruptedException {
-            context.getCounter(NodeCounter.COUNT).increment(map.size());
             for(Map.Entry<IntWritable, MapWritable> node : map.entrySet()){
                 context.write(node.getKey(), node.getValue());
             }
@@ -72,7 +68,7 @@ public class PRPreProcess {
     }
 
     public static class NodeReducer extends Reducer<IntWritable, MapWritable, IntWritable, PRNodeWritable> {
-                
+                        
         public void reduce(IntWritable key, Iterable<MapWritable> values, Context context) throws IOException, InterruptedException {
             MapWritable adjList = new MapWritable();
             for (MapWritable tuples : values){
@@ -80,13 +76,14 @@ public class PRPreProcess {
                     adjList.put(tuple.getKey(),tuple.getValue());
                 }
             }
-            long nodeCount = context.getCounter(NodeCounter.COUNT).getValue();
-            DoubleWritable prValue = new DoubleWritable(1/nodeCount);
+
+            DoubleWritable prValue = new DoubleWritable();
             IntWritable childNum = new IntWritable(adjList.size());
+            context.getCounter(PageRank.NodeCounter.COUNT).increment(1);
             PRNodeWritable node = new PRNodeWritable(key, prValue, childNum, adjList);
-            
             context.write(key, node);
         }
+
     }
 
 }
