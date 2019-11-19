@@ -67,12 +67,14 @@ public class PRNodeWritable implements Writable {
     public void write(DataOutput out) throws IOException {
         nodeID.write(out);
         prValue.write(out);
+        childNum.write(out);
         adjList.write(out);
     }
 
     public void readFields(DataInput in) throws IOException {
         nodeID.readFields(in);
         prValue.readFields(in);
+        childNum.readFields(in);
         adjList.readFields(in);
     }
 }
