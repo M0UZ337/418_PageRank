@@ -29,7 +29,7 @@ public class PRAdjust {
 
     public static class NodeReducer extends Reducer<IntWritable, PDNodeWritable, IntWritable, PDNodeWritable> { 
         public void reduce(IntWritable key, PDNodeWritable node, Context context) throws IOException, InterruptedException {
-            double alpha = Long.parseLong(conf.get("alpha")) // Not yet set
+            double alpha = Long.parseLong(conf.get("alpha")); // Not yet set
             double m = context.getCounter( m ).getValue();
             int nodeNum = context.getCounter( nodeNum ).getValue();
             double p = node.getPRValue().get();
