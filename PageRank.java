@@ -73,9 +73,8 @@ public class PageRank {
                 }
                 finalPR = finalPR + node.getPRValue().get();
             }
-            double missMass = xPR - finalPR;
             
-            context.getCounter(MissMassCounter.COUNT).increment(Double.doubleToLongBits(missMass));
+            context.getCounter(CurrentPRCounter.COUNT).increment(Double.doubleToLongBits(finalPR));
             PRNodeWritable finalNode = new PRNodeWritable(key, new DoubleWritable(finalPR), childNum, adjList);
             finalNode.setXPR(new DoubleWritable(xPR));
             context.write(key, finalNode);
@@ -100,7 +99,7 @@ public class PageRank {
 
     public static enum NodeCounter { COUNT };
     public static enum ReachCounter { COUNT };
-    public static enum MissMassCounter { COUNT };
+    public static enum CurrentPRCounter { COUNT };
 
     public static long nodeCount;
     public static double missMass;
@@ -160,7 +159,7 @@ public class PageRank {
 
             PRJob.waitForCompletion(true);
 
-            missMass = Double.longBitsToDouble(PRJob.getCounters().findCounter(PageRank.MissMassCounter.COUNT).getValue());
+            missMass = Double.longBitsToDouble(PRJob.getCounters().findCounter(PageRank.CurrentPRCounter.COUNT).getValue());
 
             Configuration PRAdjustConf = new Configuration();
             PRAdjustConf.set("alpha", args[0]);
@@ -201,7 +200,7 @@ public class PageRank {
         printResultJob.setReducerClass(FinalReducer.class);
         printResultJob.setOutputKeyClass(IntWritable.class);
         printResultJob.setOutputValueClass(Text.class);
-        FileInputFormat.addInputPath(printResultJob, new Path("/user/hadoop/tmp/Iteration1"));
+        FileInputFormat.addInputPath(printResultJob, new Path("/user/hadoop/tmp/Iteration" + Integer.toString(i)));
         FileOutputFormat.setOutputPath(printResultJob, new Path(args[3]));
                 
         System.exit(printResultJob.waitForCompletion(true) ? 0 : 1);

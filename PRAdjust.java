@@ -35,7 +35,7 @@ public class PRAdjust {
         public void setup(Context context) throws IOException, InterruptedException {
             Configuration conf = context.getConfiguration();
             alpha = Double.parseDouble(conf.get("alpha"));
-            m = Double.parseDouble(conf.get("m"));
+            m = 1.0 - Double.parseDouble(conf.get("m"));
             nodeCount = Long.parseLong(conf.get("nodeCount"));
         }
         public void reduce(IntWritable key, PRNodeWritable node, Context context) throws IOException, InterruptedException {
