@@ -40,6 +40,39 @@ public class PageRank {
         }
     }
 
+    public static class PRMapper extends Mapper<IntWritable, PRNodeWritable, IntWritable, PRNodeWritable> {
+        public void map(IntWritable key, PRNodeWritable node, Context context) throws IOException, InterruptedException {
+            double currentPR = node.getPRValue().get();
+            int childNum = node.getChildNum().get();
+            DoubleWritable childPR = new DoubleWritable(currentPR / childNum);
+            node.setPRValue(new DoubleWritable(0));
+            context.write(key, node);
+
+            for(Map.Entry<Writable, Writable> adjNode : node.getAdjList().entrySet()){
+                IntWritable adjNodeID = (IntWritable)adjNode.getKey();
+                PRNodeWritable tmpNode = new PRNodeWritable(adjNodeID, childPR, new IntWritable(0), new MapWritable());
+                context.write(adjNodeID, tmpNode);
+            }
+        }
+    }
+
+    public static class PRReducer extends Reducer<IntWritable, PRNodeWritable, IntWritable, PRNodeWritable> {
+        public void reduce(IntWritable key, Iterable<PRNodeWritable> values, Context context) throws IOException, InterruptedException {
+            double finalPR = 0;
+            MapWritable adjList = new MapWritable();
+            IntWritable childNum = new IntWritable(0);
+            for(PRNodeWritable node : values){
+                if(node.getChildNum().get() > 0){
+                    childNum.set(node.getChildNum().get());
+                    adjList.putAll(node.getAdjList());
+                }
+                finalPR = finalPR + node.getPRValue().get();
+            }
+            PRNodeWritable finalNode = new PRNodeWritable(key, new DoubleWritable(finalPR), childNum, adjList);
+            context.write(key, finalNode);
+        }
+    }
+
     public static class FinalMapper extends Mapper<IntWritable, PRNodeWritable, IntWritable, Text> {
         public void map(IntWritable key, PRNodeWritable node, Context context) throws IOException, InterruptedException {
             context.write(key, node.toText());
@@ -71,7 +104,7 @@ public class PageRank {
         preProcessJob.setOutputKeyClass(IntWritable.class);
         preProcessJob.setOutputValueClass(PRNodeWritable.class);
         preProcessJob.setOutputFormatClass(SequenceFileOutputFormat.class);
-        FileInputFormat.addInputPath(preProcessJob, new Path(args[0]));
+        FileInputFormat.addInputPath(preProcessJob, new Path(args[2]));
         FileOutputFormat.setOutputPath(preProcessJob, new Path("/user/hadoop/tmp/preProcess"));
 
         preProcessJob.waitForCompletion(true);
@@ -81,7 +114,7 @@ public class PageRank {
         Configuration prePRConf = new Configuration();
         prePRConf.set("nodeCount", Long.toString(nodeCount));
         Job prePRJob = Job.getInstance(prePRConf, "pre PR process");
-        prePRJob.setJarByClass(PRPreProcess.class);
+        prePRJob.setJarByClass(PageRank.class);
         prePRJob.setMapperClass(prePRMapper.class);
         prePRJob.setMapOutputKeyClass(IntWritable.class);
         prePRJob.setMapOutputValueClass(PRNodeWritable.class);
@@ -115,6 +148,22 @@ public class PageRank {
 
         int i = 0;
 
+        Configuration PRConf = new Configuration();
+        Job PRJob = Job.getInstance(PRConf, "part one");
+        PRJob.setJarByClass(PageRank.class);
+        PRJob.setMapperClass(PRMapper.class);
+        PRJob.setMapOutputKeyClass(IntWritable.class);
+        PRJob.setMapOutputValueClass(PRNodeWritable.class);
+        PRJob.setInputFormatClass(SequenceFileInputFormat.class);
+        PRJob.setReducerClass(PRReducer.class);
+        PRJob.setOutputKeyClass(IntWritable.class);
+        PRJob.setOutputValueClass(PRNodeWritable.class);
+        PRJob.setOutputFormatClass(SequenceFileOutputFormat.class);
+        FileInputFormat.addInputPath(PRJob, new Path("/user/hadoop/tmp/Iteration0"));
+        FileOutputFormat.setOutputPath(PRJob, new Path("/user/hadoop/tmp/Iteration0_1"));
+
+        PRJob.waitForCompletion(true);
+
         Configuration printResultConf = new Configuration();
         printResultConf.set("mapreduce.output.textoutputformat.separator", " ");
         Job printResultJob = Job.getInstance(printResultConf, "print final result");
@@ -126,8 +175,8 @@ public class PageRank {
         printResultJob.setReducerClass(FinalReducer.class);
         printResultJob.setOutputKeyClass(IntWritable.class);
         printResultJob.setOutputValueClass(Text.class);
-        FileInputFormat.addInputPath(printResultJob, new Path("/user/hadoop/tmp/Iteration" + Integer.toString(i)));
-        FileOutputFormat.setOutputPath(printResultJob, new Path(args[1]));
+        FileInputFormat.addInputPath(printResultJob, new Path("/user/hadoop/tmp/Iteration0_1"));
+        FileOutputFormat.setOutputPath(printResultJob, new Path(args[3]));
                 
         System.exit(printResultJob.waitForCompletion(true) ? 0 : 1);
     }
