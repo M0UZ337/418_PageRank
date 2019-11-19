@@ -64,8 +64,10 @@ public class PageRank {
             MapWritable adjList = new MapWritable();
             IntWritable childNum = new IntWritable(0);
             for(PRNodeWritable node : values){
-                if(Double.compare(node.getXPR().get(), -1.0) != 0){
+                if(node.getXPR().get() > -1){
                     xPR = node.getXPR().get();
+                }
+                if(node.getChildNum().get() > 0){
                     childNum.set(node.getChildNum().get());
                     adjList.putAll(node.getAdjList());
                 }
@@ -199,7 +201,7 @@ public class PageRank {
         printResultJob.setReducerClass(FinalReducer.class);
         printResultJob.setOutputKeyClass(IntWritable.class);
         printResultJob.setOutputValueClass(Text.class);
-        FileInputFormat.addInputPath(printResultJob, new Path("/user/hadoop/tmp/Iteration" + Integer.toString(i)));
+        FileInputFormat.addInputPath(printResultJob, new Path("/user/hadoop/tmp/Iteration1"));
         FileOutputFormat.setOutputPath(printResultJob, new Path(args[3]));
                 
         System.exit(printResultJob.waitForCompletion(true) ? 0 : 1);

@@ -53,7 +53,7 @@ public class PRNodeWritable implements Writable {
     }
 
     public void setXPR(DoubleWritable newXPR){
-        this.prValue = newXPR;
+        this.xPR = newXPR;
     }
 
     public IntWritable getChildNum(){

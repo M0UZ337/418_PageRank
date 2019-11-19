@@ -46,7 +46,8 @@ public class PRAdjust {
                 // PR of this node is not stable, add ReachCounter
                 context.getCounter(PageRank.ReachCounter.COUNT).increment(1);
             }
-            node.setPRValue(new DoubleWritable(p2));
+            PRNodeWritable newNode = new PRNodeWritable(key, new DoubleWritable(p2), node.getChildNum(), node.getAdjList());
+            newNode.setXPR(new DoubleWritable(xp));
             context.write(key, node);
         }
     }
