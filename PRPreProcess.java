@@ -64,6 +64,7 @@ public class PRPreProcess {
         }
 
         public void cleanup(Context context) throws IOException, InterruptedException {
+            context.getCounter(NodeCounter.COUNT).increment(map.size());
             for(Map.Entry<IntWritable, MapWritable> node : map.entrySet()){
                 context.write(node.getKey(), node.getValue());
             }
@@ -79,10 +80,11 @@ public class PRPreProcess {
                     adjList.put(tuple.getKey(),tuple.getValue());
                 }
             }
-            DoubleWritable prValue = new DoubleWritable();
+            long nodeCount = context.getCounter(NodeCounter.COUNT).getValue();
+            DoubleWritable prValue = new DoubleWritable(1/nodeCount);
             IntWritable childNum = new IntWritable(adjList.size());
             PRNodeWritable node = new PRNodeWritable(key, prValue, childNum, adjList);
-            context.getCounter(NodeCounter.COUNT).increment(1);
+            
             context.write(key, node);
         }
     }
