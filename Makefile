@@ -1,8 +1,8 @@
 all: PageRank.class
-	jar cf pr.jar PRPreProcess*.class PRNodeWritable*.class PageRank*.class
+	jar cf pr.jar PRPreProcess*.class PRNodeWritable*.class PageRank*.class PRAdjust*.class
 
 compile:
-	hadoop com.sun.tools.javac.Main PRPreProcess.java PRNodeWritable.java PageRank.java
+	hadoop com.sun.tools.javac.Main PRPreProcess.java PRNodeWritable.java PageRank.java PRAdjust.java
 
 clean:
 	rm -f *.jar *.class

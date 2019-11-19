@@ -15,6 +15,7 @@ public class PRNodeWritable implements Writable {
     
     private IntWritable nodeID;
     private DoubleWritable prValue;
+    private DoubleWritable xPR;
     private IntWritable childNum;
     private MapWritable adjList;
     
@@ -22,6 +23,7 @@ public class PRNodeWritable implements Writable {
     public PRNodeWritable(){
         this.nodeID = new IntWritable();
         this.prValue = new DoubleWritable();
+        this.xPR = new DoubleWritable();
         this.childNum = new IntWritable();
         this.adjList = new MapWritable();
     }
@@ -29,6 +31,7 @@ public class PRNodeWritable implements Writable {
     public PRNodeWritable(IntWritable nodeID, DoubleWritable prValue, IntWritable childNum, MapWritable adjList){
         this.nodeID = nodeID;
         this.prValue = prValue;
+        this.xPR = new DoubleWritable(-1.0);
         this.childNum = childNum;
         this.adjList = adjList;
     }
@@ -45,6 +48,14 @@ public class PRNodeWritable implements Writable {
         this.prValue = newPRValue;
     }
 
+    public DoubleWritable getXPR(){
+        return xPR;
+    }
+
+    public void setXPR(DoubleWritable newXPR){
+        this.prValue = newXPR;
+    }
+
     public IntWritable getChildNum(){
         return childNum;
     }
@@ -57,6 +68,7 @@ public class PRNodeWritable implements Writable {
         String output = "";
         output = output + "nodeID: " + this.nodeID.toString();
         output = output + " prValue: " + this.prValue.toString();
+        output = output + " XPR: " + this.xPR.toString();
         output = output + " childNum: " + this.childNum.toString();
         output = output + " adjList: ";
         for(Map.Entry<Writable, Writable> node : this.adjList.entrySet()){
@@ -68,6 +80,7 @@ public class PRNodeWritable implements Writable {
     public void write(DataOutput out) throws IOException {
         nodeID.write(out);
         prValue.write(out);
+        xPR.write(out);
         childNum.write(out);
         adjList.write(out);
     }
@@ -75,6 +88,7 @@ public class PRNodeWritable implements Writable {
     public void readFields(DataInput in) throws IOException {
         nodeID.readFields(in);
         prValue.readFields(in);
+        xPR.readFields(in);
         childNum.readFields(in);
         adjList.readFields(in);
     }

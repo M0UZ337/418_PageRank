@@ -21,14 +21,14 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 public class PRAdjust {
 
-    public static class PRAdjustMapper extends Mapper<IntWritable, PDNodeWritable, IntWritable, PDNodeWritable> {
-        public void map(IntWritable key, PDNodeWritable node, Context context) throws IOException, InterruptedException {
+    public static class PRAdjustMapper extends Mapper<IntWritable, PRNodeWritable, IntWritable, PRNodeWritable> {
+        public void map(IntWritable key, PRNodeWritable node, Context context) throws IOException, InterruptedException {
             context.write(key, node);
         }
 
     }
 
-    public static class PRAdjustReducer extends Reducer<IntWritable, PDNodeWritable, IntWritable, PDNodeWritable> { 
+    public static class PRAdjustReducer extends Reducer<IntWritable, PRNodeWritable, IntWritable, PRNodeWritable> { 
         double alpha;
         double m;
         long nodeCount;
@@ -38,10 +38,14 @@ public class PRAdjust {
             m = Double.parseDouble(conf.get("m"));
             nodeCount = Long.parseLong(conf.get("nodeCount"));
         }
-        public void reduce(IntWritable key, PDNodeWritable node, Context context) throws IOException, InterruptedException {
-            m = context.getCounter( m ).getValue();
+        public void reduce(IntWritable key, PRNodeWritable node, Context context) throws IOException, InterruptedException {
             double p = node.getPRValue().get();
-            double p2 = (alpha / nodeNum) + (1.0 - alpha) * ((m / nodeNum) + p);
+            double xp = node.getXPR().get();
+            double p2 = (alpha / nodeCount) + (1.0 - alpha) * ((m / nodeCount) + p);
+            if(!(Math.abs(p - xp) < 0.00001)){
+                // PR of this node is not stable, add ReachCounter
+                context.getCounter(PageRank.ReachCounter.COUNT).increment(1);
+            }
             node.setPRValue(new DoubleWritable(p2));
             context.write(key, node);
         }

@@ -46,6 +46,7 @@ public class PageRank {
             int childNum = node.getChildNum().get();
             DoubleWritable childPR = new DoubleWritable(currentPR / childNum);
             node.setPRValue(new DoubleWritable(0));
+            node.setXPR(new DoubleWritable(currentPR));
             context.write(key, node);
 
             for(Map.Entry<Writable, Writable> adjNode : node.getAdjList().entrySet()){
@@ -59,16 +60,22 @@ public class PageRank {
     public static class PRReducer extends Reducer<IntWritable, PRNodeWritable, IntWritable, PRNodeWritable> {
         public void reduce(IntWritable key, Iterable<PRNodeWritable> values, Context context) throws IOException, InterruptedException {
             double finalPR = 0;
+            double xPR = 0;
             MapWritable adjList = new MapWritable();
             IntWritable childNum = new IntWritable(0);
             for(PRNodeWritable node : values){
-                if(node.getChildNum().get() > 0){
+                if(Double.compare(node.getXPR().get(), -1.0) != 0){
+                    xPR = node.getXPR().get();
                     childNum.set(node.getChildNum().get());
                     adjList.putAll(node.getAdjList());
                 }
                 finalPR = finalPR + node.getPRValue().get();
             }
+            double missMass = xPR - finalPR;
+            
+            context.getCounter(MissMassCounter.COUNT).increment(Double.doubleToLongBits(missMass));
             PRNodeWritable finalNode = new PRNodeWritable(key, new DoubleWritable(finalPR), childNum, adjList);
+            finalNode.setXPR(new DoubleWritable(xPR));
             context.write(key, finalNode);
         }
     }
@@ -90,7 +97,11 @@ public class PageRank {
     }
 
     public static enum NodeCounter { COUNT };
+    public static enum ReachCounter { COUNT };
+    public static enum MissMassCounter { COUNT };
+
     public static long nodeCount;
+    public static double missMass;
 
     public static void main(String[] args) throws Exception
     {   
@@ -129,40 +140,53 @@ public class PageRank {
         prePRJob.waitForCompletion(true);
 
         int i = 0;
+        int iNum = Integer.parseInt(args[1]);
+        while(true){
+            Configuration PRConf = new Configuration();
+            Job PRJob = Job.getInstance(PRConf, "part one");
+            PRJob.setJarByClass(PageRank.class);
+            PRJob.setMapperClass(PRMapper.class);
+            PRJob.setMapOutputKeyClass(IntWritable.class);
+            PRJob.setMapOutputValueClass(PRNodeWritable.class);
+            PRJob.setInputFormatClass(SequenceFileInputFormat.class);
+            PRJob.setReducerClass(PRReducer.class);
+            PRJob.setOutputKeyClass(IntWritable.class);
+            PRJob.setOutputValueClass(PRNodeWritable.class);
+            PRJob.setOutputFormatClass(SequenceFileOutputFormat.class);
+            FileInputFormat.addInputPath(PRJob, new Path("/user/hadoop/tmp/Iteration0"));
+            FileOutputFormat.setOutputPath(PRJob, new Path("/user/hadoop/tmp/Iteration0_1"));
 
-        Configuration PRConf = new Configuration();
-        Job PRJob = Job.getInstance(PRConf, "part one");
-        PRJob.setJarByClass(PageRank.class);
-        PRJob.setMapperClass(PRMapper.class);
-        PRJob.setMapOutputKeyClass(IntWritable.class);
-        PRJob.setMapOutputValueClass(PRNodeWritable.class);
-        PRJob.setInputFormatClass(SequenceFileInputFormat.class);
-        PRJob.setReducerClass(PRReducer.class);
-        PRJob.setOutputKeyClass(IntWritable.class);
-        PRJob.setOutputValueClass(PRNodeWritable.class);
-        PRJob.setOutputFormatClass(SequenceFileOutputFormat.class);
-        FileInputFormat.addInputPath(PRJob, new Path("/user/hadoop/tmp/Iteration0"));
-        FileOutputFormat.setOutputPath(PRJob, new Path("/user/hadoop/tmp/Iteration0_1"));
+            PRJob.waitForCompletion(true);
 
-        PRJob.waitForCompletion(true);
+            missMass = Double.longBitsToDouble(PRJob.getCounters().findCounter(PageRank.MissMassCounter.COUNT).getValue());
 
-        Configuration PRAdjustConf = new Condiguation();
-        PRAdjustConf.set("alpha", Long.toString(arg[0]));
-        PRAdjustConf.set("nodeCount", Long.toString(nodeCount));
-        Job PRAdjustJob = Job.getInstance(PRAdjustConf, "PRAdjust");
-        PRAdjustJob.setJarByClass(PRAdjust.class);
-        PRAdjustJob.setMapperClass(PRAdjustMapper.class);
-        PRAdjustJob.setMapOutputKeyClass(IntWritable.class);
-        PRAdjustJob.setMapOutputValueClass(PRNodeWritable.class);
-        PRAdjustJob.setInputFormatClass(SequenceFileInputFormat.class);
-        PRAdjustJob.setReducerClass(PRAdjustReducer.class);
-        PRAdjustJob.setOutputKeyClass(IntWritable.class);
-        PRAdjustJob.setOutputValueClass(PRNodeWritable.class);
-        PRAdjustJob.setOutputFormatClass(SequenceFileOutputFormat.class);
-        FileInputFormat.addInputPath(PRAdjustJob, new Path("/user/hadoop/tmp/Iteration0_1"));
-        FileOutputFormat.setOutputPath(PRAdjustJob, new Path("/user/hadoop/tmp/Iteration1"));
+            Configuration PRAdjustConf = new Configuration();
+            PRAdjustConf.set("alpha", args[0]);
+            PRAdjustConf.set("m", Double.toString(missMass));
+            PRAdjustConf.set("nodeCount", Long.toString(nodeCount));
+            Job PRAdjustJob = Job.getInstance(PRAdjustConf, "PRAdjust");
+            PRAdjustJob.setJarByClass(PRAdjust.class);
+            PRAdjustJob.setMapperClass(PRAdjust.PRAdjustMapper.class);
+            PRAdjustJob.setMapOutputKeyClass(IntWritable.class);
+            PRAdjustJob.setMapOutputValueClass(PRNodeWritable.class);
+            PRAdjustJob.setInputFormatClass(SequenceFileInputFormat.class);
+            PRAdjustJob.setReducerClass(PRAdjust.PRAdjustReducer.class);
+            PRAdjustJob.setOutputKeyClass(IntWritable.class);
+            PRAdjustJob.setOutputValueClass(PRNodeWritable.class);
+            PRAdjustJob.setOutputFormatClass(SequenceFileOutputFormat.class);
+            FileInputFormat.addInputPath(PRAdjustJob, new Path("/user/hadoop/tmp/Iteration0_1"));
+            FileOutputFormat.setOutputPath(PRAdjustJob, new Path("/user/hadoop/tmp/Iteration1"));
 
-        PRAdjustJob.waitForCompletion(true);
+            PRAdjustJob.waitForCompletion(true);
+
+            i++;
+            long reachCount = PRAdjustJob.getCounters().findCounter(PageRank.ReachCounter.COUNT).getValue();
+            if((!(i < iNum) && iNum != 0) || reachCount == 0){
+                // enough iterations OR no more update
+                break;
+            }
+        }
+
 
         Configuration printResultConf = new Configuration();
         printResultConf.set("mapreduce.output.textoutputformat.separator", " ");
