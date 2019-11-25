@@ -1,10 +1,14 @@
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.StringTokenizer;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.IntWritable;
@@ -58,6 +62,9 @@ public class PageRank {
     }
 
     public static class PRReducer extends Reducer<IntWritable, PRNodeWritable, IntWritable, PRNodeWritable> {
+        
+        List<Double> currentMassList = new ArrayList<Double>();
+
         public void reduce(IntWritable key, Iterable<PRNodeWritable> values, Context context) throws IOException, InterruptedException {
             double finalPR = 0;
             double xPR = 0;
@@ -74,10 +81,19 @@ public class PageRank {
                 finalPR = finalPR + node.getPRValue().get();
             }
             
+            currentMassList.add(finalPR);
             context.getCounter(CurrentPRCounter.COUNT).increment(Double.doubleToLongBits(finalPR));
             PRNodeWritable finalNode = new PRNodeWritable(key, new DoubleWritable(finalPR), childNum, adjList);
             finalNode.setXPR(new DoubleWritable(xPR));
             context.write(key, finalNode);
+        }
+
+        public void cleanup(Context context) throws IOException, InterruptedException {
+            double currentMass = currentMassList.stream().mapToDouble(Double::doubleValue).sum();
+            FileSystem fs = FileSystem.get(context.getConfiguration());
+            FSDataOutputStream out = fs.create(new Path("/user/hadoop/tmp/currentMass"),true);
+            out.writeDouble(currentMass);
+            out.close();
         }
     }
 

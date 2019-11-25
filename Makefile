@@ -15,7 +15,7 @@ run:
 	hadoop fs -rm -r -f /user/hadoop/tmp && \
 	hadoop fs -mkdir /user/hadoop/tmp && \
 	hadoop fs -rm -r -f /user/hadoop/output && \
-	hadoop jar pr.jar PageRank 0.2 1 /user/hadoop/PRTestcase /user/hadoop/output && \
+	hadoop jar pr.jar PageRank 0.2 2 /user/hadoop/PRTestcase /user/hadoop/output && \
 	hadoop fs -get /user/hadoop/output ./ && \
 	cat ./output/part*
 

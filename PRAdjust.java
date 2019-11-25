@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.StringTokenizer;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Writable;
@@ -30,25 +32,32 @@ public class PRAdjust {
 
     public static class PRAdjustReducer extends Reducer<IntWritable, PRNodeWritable, IntWritable, PRNodeWritable> { 
         double alpha;
-        double m;
+        double missMass;
         long nodeCount;
         public void setup(Context context) throws IOException, InterruptedException {
             Configuration conf = context.getConfiguration();
+            FileSystem fs = FileSystem.get(conf);
+            FSDataInputStream out = fs.open(new Path("/user/hadoop/tmp/currentMass"));
+            double currentMass = out.readDouble();
+            out.close();
             alpha = Double.parseDouble(conf.get("alpha"));
-            m = 1.0 - Double.parseDouble(conf.get("m"));
+            missMass = 1 - currentMass;
             nodeCount = Long.parseLong(conf.get("nodeCount"));
         }
-        public void reduce(IntWritable key, PRNodeWritable node, Context context) throws IOException, InterruptedException {
-            double p = node.getPRValue().get();
-            double xp = node.getXPR().get();
-            double p2 = (alpha / nodeCount) + (1.0 - alpha) * ((m / nodeCount) + p);
-            if(!(Math.abs(p - xp) < 0.00001)){
-                // PR of this node is not stable, add ReachCounter
-                context.getCounter(PageRank.ReachCounter.COUNT).increment(1);
+        public void reduce(IntWritable key, Iterable<PRNodeWritable> nodes, Context context) throws IOException, InterruptedException {
+            
+            for(PRNodeWritable node : nodes){
+                double prValue = node.getPRValue().get();
+                double xPR = node.getXPR().get();
+                double adjustedPR = (alpha / nodeCount) + (1.0 - alpha) * ((missMass / nodeCount) + prValue);
+                if(!(Math.abs(adjustedPR - xPR) < 0.00001)){
+                    // PR of this node is not stable, add ReachCounter
+                    context.getCounter(PageRank.ReachCounter.COUNT).increment(1);
+                }
+                PRNodeWritable newNode = new PRNodeWritable(key, new DoubleWritable(adjustedPR), node.getChildNum(), node.getAdjList());
+                newNode.setXPR(new DoubleWritable(xPR));
+                context.write(key, newNode);
             }
-            PRNodeWritable newNode = new PRNodeWritable(key, new DoubleWritable(p2), node.getChildNum(), node.getAdjList());
-            newNode.setXPR(new DoubleWritable(xp));
-            context.write(key, node);
         }
     }
 }
