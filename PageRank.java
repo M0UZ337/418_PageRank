@@ -82,7 +82,6 @@ public class PageRank {
             }
             
             currentMassList.add(finalPR);
-            context.getCounter(CurrentPRCounter.COUNT).increment(Double.doubleToLongBits(finalPR));
             PRNodeWritable finalNode = new PRNodeWritable(key, new DoubleWritable(finalPR), childNum, adjList);
             finalNode.setXPR(new DoubleWritable(xPR));
             context.write(key, finalNode);
@@ -97,16 +96,16 @@ public class PageRank {
         }
     }
 
-    public static class FinalMapper extends Mapper<IntWritable, PRNodeWritable, IntWritable, Text> {
+    public static class FinalMapper extends Mapper<IntWritable, PRNodeWritable, IntWritable, DoubleWritable> {
         public void map(IntWritable key, PRNodeWritable node, Context context) throws IOException, InterruptedException {
-            context.write(key, node.toText());
+            context.write(key, node.getPRValue());
         }
     }
 
-    public static class FinalReducer extends Reducer<IntWritable, Text, IntWritable, Text> {
-        public void reduce(IntWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+    public static class FinalReducer extends Reducer<IntWritable, DoubleWritable, IntWritable, DoubleWritable> {
+        public void reduce(IntWritable key, Iterable<DoubleWritable> values, Context context) throws IOException, InterruptedException {
             
-            for (Text value : values){
+            for (DoubleWritable value : values){
                 context.write(key, value);
             }
         
@@ -115,7 +114,6 @@ public class PageRank {
 
     public static enum NodeCounter { COUNT };
     public static enum ReachCounter { COUNT };
-    public static enum CurrentPRCounter { COUNT };
 
     public static long nodeCount;
     public static double missMass;
@@ -175,11 +173,9 @@ public class PageRank {
 
             PRJob.waitForCompletion(true);
 
-            missMass = Double.longBitsToDouble(PRJob.getCounters().findCounter(PageRank.CurrentPRCounter.COUNT).getValue());
 
             Configuration PRAdjustConf = new Configuration();
             PRAdjustConf.set("alpha", args[0]);
-            PRAdjustConf.set("m", Double.toString(missMass));
             PRAdjustConf.set("nodeCount", Long.toString(nodeCount));
             Job PRAdjustJob = Job.getInstance(PRAdjustConf, "PRAdjust");
             PRAdjustJob.setJarByClass(PRAdjust.class);
@@ -211,11 +207,11 @@ public class PageRank {
         printResultJob.setJarByClass(PageRank.class);
         printResultJob.setMapperClass(FinalMapper.class);
         printResultJob.setMapOutputKeyClass(IntWritable.class);
-        printResultJob.setMapOutputValueClass(Text.class);
+        printResultJob.setMapOutputValueClass(DoubleWritable.class);
         printResultJob.setInputFormatClass(SequenceFileInputFormat.class);
         printResultJob.setReducerClass(FinalReducer.class);
         printResultJob.setOutputKeyClass(IntWritable.class);
-        printResultJob.setOutputValueClass(Text.class);
+        printResultJob.setOutputValueClass(DoubleWritable.class);
         FileInputFormat.addInputPath(printResultJob, new Path("/user/hadoop/tmp/Iteration" + Integer.toString(i)));
         FileOutputFormat.setOutputPath(printResultJob, new Path(args[3]));
                 
